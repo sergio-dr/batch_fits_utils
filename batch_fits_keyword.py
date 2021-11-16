@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
+# %%
 import argparse
 import os
 from astropy.io import fits
-from glob import glob 
+from glob import iglob 
 
 DESC="""
 Batch-process FITS files in the specified path.
@@ -22,10 +23,14 @@ Examples:
 
 * Same as above, but setting its value to 'Ha':
 ```
-  batch_fits_keyword.py e:\astrofoto\_Flats\**\*Ha*.fits -r -t *Ha* -k FILTER -v 'Ha'  
+  batch_fits_keyword.py e:\astrofoto\_Flats\**\*Ha*.fits -r -k FILTER -v 'Ha'  
 ```
 
 """
+
+# Debug
+#sys.argv = ['this.py', 'E:\\Astrofoto\\_Flats\\**\\*Ha*.fits', '-r', '-k FILTER']
+
 
 KEY_LIST_SEP = ","
 
@@ -44,7 +49,7 @@ args = parser.parse_args()
 
 
 # FITS path
-fits_directory = args.path_to_fits_files
+files_path = args.path_to_fits_files
 recursive = args.recursive
 
 # FITS keyword
@@ -87,13 +92,15 @@ if not value:
 else:
     print(f"Adding or replacing keyword: {key} = {value} // {comment}")
 
-for fname in glob(fits_directory, recursive=recursive):
-    if os.path.isfile(fname):
-        current_value = get_keyword(fname, key)
-        if not value:
-            print(KEY_LIST_SEP.join([fname] + current_value))
-        else:
-            add_replace_keyword(fname, key[0], value, comment)
-            print(f"{fname},{current_value[0]}->{value} ({comment})")
+fname_gen = ( fname for fname in iglob(files_path, recursive=recursive) if os.path.isfile(fname) )
+for fname in fname_gen:
+    current_value = get_keyword(fname, key)
+    if not value:
+        print(KEY_LIST_SEP.join([fname] + current_value))
+    else:
+        add_replace_keyword(fname, key[0], value, comment)
+        print(f"{fname},{current_value[0]}->{value} ({comment})")
 
 
+
+# %%
