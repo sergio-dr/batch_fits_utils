@@ -41,7 +41,8 @@ parser.add_argument("filename_template",
                     "FITS keywords between curly braces. Also available as keywords are " + 
                     "LOC_ISO_DATETIME (local datetime), LOC_ISO_DATE (local date), " +
                     "SESSION (date 'rounded' to the nearest midnight), " + 
-                    "SEQ (sequence number, if the original filename had it) " + 
+                    "SEQ (sequence number, if the original filename had it), " + 
+                    "NAME (original filename)" +
                     "and EXT (original file extension, including the '.')." +
                     "This template could include pathname separators: in this case, the directories " + 
                     "will be automatically created. See the examples.")
@@ -115,6 +116,11 @@ def augment_keywords(hdr, fname):
     session_date = dateobs_dt if dateobs_dt.time() < time(12, 00) else dateobs_dt + timedelta(days=1)
     hdr['SESSION'] =  session_date.strftime("%Y%m%d")
 
+    # Make EXPTIME integer when possible
+    exptime = float(hdr['EXPTIME'])
+    if exptime.is_integer():
+        hdr['EXPTIME'] = str(int(exptime))
+
     # If FILTER is missing (KStars/Ekos bug), use the current directory
     if 'FILTER' not in hdr:
         hdr['FILTER'] = os.path.basename(os.path.dirname(fname))
@@ -148,8 +154,7 @@ for fname in fname_list:
         prev_dir = cur_dir
 
     new_fname = to_filename(args.filename_template, hdr)        
-    print(os.path.basename(fname), "->", new_fname, end=' ... ')
-    new_fname = os.path.join(cur_dir, new_fname)
+    print(fname, "->", new_fname, end=' ... ')
 
     if not args.dry_run:
         os.makedirs(os.path.dirname(new_fname), exist_ok=True)
